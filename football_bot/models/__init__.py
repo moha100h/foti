@@ -4,5 +4,6 @@ from football_bot.models.match import Match
 from football_bot.models.prediction import Prediction
 from football_bot.models.team import Team
 from football_bot.models.setting import Setting
+from football_bot.models.bet import Bet
 
-__all__ = ["Base", "User", "Match", "Prediction", "Team", "Setting"]
+__all__ = ["Base", "User", "Match", "Prediction", "Team", "Setting", "Bet"]
