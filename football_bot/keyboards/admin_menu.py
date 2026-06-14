@@ -1,8 +1,5 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
 def admin_menu_keyboard():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="\U0001f511 \u062a\u0646\u0638\u06cc\u0645 \u06a9\u0644\u06cc\u062f API", callback_data="admin_set_api")],
-        [InlineKeyboardButton(text="\U0001f4e2 \u067e\u06cc\u0627\u0645 \u0647\u0645\u06af\u0627\u0646\u06cc", callback_data="admin_broadcast")],
-        [InlineKeyboardButton(text="\U0001f504 \u062a\u0627\u0632\u0647\u200c\u0633\u0627\u0632\u06cc \u062f\u0627\u062f\u0647\u200c\u0647\u0627", callback_data="admin_refresh")],
-    ])
+    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="\u2699\ufe0f \u062a\u0646\u0638\u06cc\u0645\u0627\u062a", callback_data="admin_settings")],[InlineKeyboardButton(text="\U0001f465 \u0645\u062f\u06cc\u0631\u06cc\u062a \u06a9\u0627\u0631\u0628\u0631\u0627\u0646", callback_data="admin_users")],[InlineKeyboardButton(text="\U0001f4e2 \u067e\u06cc\u0627\u0645 \u0647\u0645\u06af\u0627\u0646\u06cc", callback_data="admin_broadcast")],[InlineKeyboardButton(text="\U0001f504 \u062a\u0627\u0632\u0647\u200c\u0633\u0627\u0632\u06cc \u062f\u0627\u062f\u0647\u200c\u0647\u0627", callback_data="admin_refresh")],[InlineKeyboardButton(text="\u2b05\ufe0f \u0628\u0627\u0632\u06af\u0634\u062a", callback_data="go_home")]])
+def users_menu_keyboard():
+    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="\u2795 \u0627\u0641\u0632\u0648\u062f\u0646 \u06a9\u0627\u0631\u0628\u0631", callback_data="user_add"),InlineKeyboardButton(text="\u2796 \u062d\u0630\u0641 \u06a9\u0627\u0631\u0628\u0631", callback_data="user_del")],[InlineKeyboardButton(text="\U0001f4cb \u0644\u06cc\u0633\u062a \u06a9\u0627\u0631\u0628\u0631\u0627\u0646", callback_data="user_list")],[InlineKeyboardButton(text="\u2b05\ufe0f \u0628\u0627\u0632\u06af\u0634\u062a", callback_data="admin_home")]])
