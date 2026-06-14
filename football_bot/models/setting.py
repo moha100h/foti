@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, Text
-from football_bot.models.base import Base
+from football_bot.database import Base
 
 
 class Setting(Base):
