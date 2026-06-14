@@ -8,6 +8,8 @@ from football_bot.services.stats_service import get_bot_stats
 
 router = Router()
 
+MSG_NO_ACCESS = "دسترسی ندارید."
+
 
 def is_admin(user_id: int) -> bool:
     return user_id in settings.ADMIN_IDS
@@ -16,18 +18,22 @@ def is_admin(user_id: int) -> bool:
 @router.message(Command("admin"))
 async def cmd_admin(message: Message, db: AsyncSession):
     if not is_admin(message.from_user.id):
-        await message.answer("دسترسی ندارید.")
+        await message.answer(MSG_NO_ACCESS)
         return
     stats = await get_bot_stats(db)
-    text = (
-        "<b>پنل مدیریت</b>
+    lines = [
+        "<b>پنل مدیریت</b>",
+        "",
+        "کاربران: " + str(stats.get("users", 0)),
+        "پیش‌بینی‌ها: " + str(stats.get("predictions", 0)),
+        "بازی‌های ذخیره‌شده: " + str(stats.get("matches", 0)),
+    ]
+    await message.answer("\n".join(lines), reply_markup=admin_menu_keyboard())
 
-"
-        f"کاربران: {stats.get('users', 0)}
-"
-        f"پیش‌بینی‌ها: {stats.get('predictions', 0)}
-"
-        f"بازی‌های ذخیره‌شده: {stats.get('matches', 0)}
-"
-    )
-    await message.answer(text, reply_markup=admin_menu_keyboard())
+
+@router.callback_query(F.data == "admin_broadcast")
+async def admin_broadcast(call: CallbackQuery, db: AsyncSession):
+    if not is_admin(call.from_user.id):
+        await call.answer(MSG_NO_ACCESS, show_alert=True)
+        return
+    await call.message.edit_text("پیام خود را برای ارسال به همه کاربران بنویسید:")

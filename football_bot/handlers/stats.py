@@ -7,11 +7,15 @@ from football_bot.keyboards.stats_menu import stats_menu_keyboard
 
 router = Router()
 
+MSG_SELECT = "بخش آمار را انتخاب کنید:"
+MSG_NO_SCORERS = "آمار گلزنان در دسترس نیست."
+MSG_SCORERS_TITLE = "<b>برترین گلزنان</b>\n\n"
+
 
 @router.message(Command("stats"))
 @router.message(F.text == "آمار")
 async def cmd_stats(message: Message, db: AsyncSession):
-    await message.answer("بخش آمار را انتخاب کنید:", reply_markup=stats_menu_keyboard())
+    await message.answer(MSG_SELECT, reply_markup=stats_menu_keyboard())
 
 
 @router.callback_query(F.data == "stats_scorers")
@@ -19,12 +23,9 @@ async def stats_scorers(call: CallbackQuery, db: AsyncSession):
     await call.answer()
     scorers = await get_top_scorers(db)
     if not scorers:
-        await call.message.edit_text("آمار گلزنان در دسترس نیست.", reply_markup=stats_menu_keyboard())
+        await call.message.edit_text(MSG_NO_SCORERS, reply_markup=stats_menu_keyboard())
         return
-    text = "<b>برترین گلزنان</b>
-
-"
+    lines = [MSG_SCORERS_TITLE]
     for i, s in enumerate(scorers[:10], 1):
-        text += f"{i}. {s['name']} ({s['team']}) - {s['goals']} گل
-"
-    await call.message.edit_text(text, reply_markup=stats_menu_keyboard())
+        lines.append(str(i) + ". " + s["name"] + " (" + s["team"] + ") - " + str(s["goals"]) + " گل\n")
+    await call.message.edit_text("".join(lines), reply_markup=stats_menu_keyboard())

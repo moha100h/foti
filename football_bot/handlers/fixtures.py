@@ -8,11 +8,17 @@ from football_bot.utils.formatting import format_fixture
 
 router = Router()
 
+MSG_SELECT = "برنامه بازی‌ها را انتخاب کنید:"
+MSG_NO_TODAY = "امروز بازیای برنامه‌ریزی نشده."
+MSG_NO_TOMORROW = "فردا بازیای برنامه‌ریزی نشده."
+MSG_TODAY = "<b>بازی‌های امروز</b>\n\n"
+MSG_TOMORROW = "<b>بازی‌های فردا</b>\n\n"
+
 
 @router.message(Command("fixtures"))
 @router.message(F.text == "برنامه بازی‌ها")
 async def cmd_fixtures(message: Message, db: AsyncSession):
-    await message.answer("برنامه بازی‌ها را انتخاب کنید:", reply_markup=fixtures_menu_keyboard())
+    await message.answer(MSG_SELECT, reply_markup=fixtures_menu_keyboard())
 
 
 @router.callback_query(F.data == "fixtures_today")
@@ -20,12 +26,9 @@ async def fixtures_today(call: CallbackQuery, db: AsyncSession):
     await call.answer()
     matches = await get_today_fixtures()
     if not matches:
-        await call.message.edit_text("امروز بازی‌ای برنامه‌ریزی نشده.", reply_markup=fixtures_menu_keyboard())
+        await call.message.edit_text(MSG_NO_TODAY, reply_markup=fixtures_menu_keyboard())
         return
-    text = "<b>بازی‌های امروز</b>
-
-" + "".join(format_fixture(m) + "
-" for m in matches[:15])
+    text = MSG_TODAY + "".join(format_fixture(m) + "\n" for m in matches[:15])
     await call.message.edit_text(text, reply_markup=fixtures_menu_keyboard())
 
 
@@ -34,10 +37,7 @@ async def fixtures_tomorrow(call: CallbackQuery, db: AsyncSession):
     await call.answer()
     matches = await get_tomorrow_fixtures()
     if not matches:
-        await call.message.edit_text("فردا بازی‌ای برنامه‌ریزی نشده.", reply_markup=fixtures_menu_keyboard())
+        await call.message.edit_text(MSG_NO_TOMORROW, reply_markup=fixtures_menu_keyboard())
         return
-    text = "<b>بازی‌های فردا</b>
-
-" + "".join(format_fixture(m) + "
-" for m in matches[:15])
+    text = MSG_TOMORROW + "".join(format_fixture(m) + "\n" for m in matches[:15])
     await call.message.edit_text(text, reply_markup=fixtures_menu_keyboard())
