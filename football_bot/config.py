@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     LOG_FILE: str = "logs/foti.log"
     RATE_LIMIT: int = 60
     RATE_LIMIT_WINDOW: int = 60
+    # Optional football-data.org API token (free tier works without it, but a key
+    # raises the rate limit and unlocks more competitions). Get one at football-data.org.
+    FOOTBALL_DATA_TOKEN: Optional[str] = ""
     # Used only by Alembic migrations (psycopg2 sync driver)
     ALEMBIC_DATABASE_URL: Optional[str] = None
 
