@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
-from typing import List
+from pydantic import field_validator
+from typing import List, Optional
 from functools import lru_cache
 
 
@@ -20,11 +21,20 @@ class Settings(BaseSettings):
     LOG_FILE: str = "logs/foti.log"
     RATE_LIMIT: int = 60
     RATE_LIMIT_WINDOW: int = 60
+    # Used only by Alembic migrations (psycopg2 sync driver)
+    ALEMBIC_DATABASE_URL: Optional[str] = None
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = True
+    @field_validator("ADMIN_IDS", mode="before")
+    @classmethod
+    def parse_admin_ids(cls, v):
+        """Accept '123' or '123,456' or [123, 456] or 123"""
+        if isinstance(v, int):
+            return [v]
+        if isinstance(v, str):
+            return [int(x.strip()) for x in v.split(",") if x.strip()]
+        return v
+
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "case_sensitive": True}
 
 
 @lru_cache()
