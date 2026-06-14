@@ -1,8 +1,10 @@
 #!/bin/bash
 set -e
+
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 info()    { echo -e "${BLUE}[INFO]${NC} $1"; }
 success() { echo -e "${GREEN}[OK]${NC} $1"; }
+warn()    { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error()   { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
 clear
@@ -30,41 +32,60 @@ API_KEY=$(openssl rand -hex 32)
 
 info "Installing to: $INSTALL_DIR"
 
-info "Installing system packages..."
+# ── System packages ───────────────────────────────────────────────────────────
+info "Updating system packages..."
+export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq python3.11 python3.11-venv python3-pip \
-    postgresql postgresql-contrib redis-server git curl openssl \
-    build-essential libpq-dev > /dev/null 2>&1
-success "System packages installed"
+apt-get install -y -qq software-properties-common curl git openssl \
+    build-essential libpq-dev tzdata > /dev/null 2>&1
 
-info "Configuring PostgreSQL..."
-systemctl start postgresql && systemctl enable postgresql
-sudo -u postgres psql -c "CREATE USER foti WITH PASSWORD '$DB_PASS';" 2>/dev/null || true
+# ── Python 3.11 via deadsnakes PPA ───────────────────────────────────────────
+info "Installing Python 3.11..."
+add-apt-repository -y ppa:deadsnakes/ppa > /dev/null 2>&1
+apt-get update -qq
+apt-get install -y -qq python3.11 python3.11-venv python3.11-dev > /dev/null 2>&1
+success "Python 3.11 installed"
+
+# ── PostgreSQL ────────────────────────────────────────────────────────────────
+info "Installing PostgreSQL..."
+apt-get install -y -qq postgresql postgresql-contrib > /dev/null 2>&1
+systemctl start postgresql
+systemctl enable postgresql
+sudo -u postgres psql -c "CREATE USER foti WITH PASSWORD '$DB_PASS';" 2>/dev/null || \
+    sudo -u postgres psql -c "ALTER USER foti WITH PASSWORD '$DB_PASS';"
 sudo -u postgres psql -c "CREATE DATABASE foti_db OWNER foti;" 2>/dev/null || true
 success "PostgreSQL ready"
 
-info "Starting Redis..."
-systemctl start redis-server && systemctl enable redis-server
+# ── Redis ─────────────────────────────────────────────────────────────────────
+info "Installing Redis..."
+apt-get install -y -qq redis-server > /dev/null 2>&1
+systemctl start redis-server
+systemctl enable redis-server
 success "Redis ready"
 
+# ── Project directory ─────────────────────────────────────────────────────────
 info "Setting up $INSTALL_DIR ..."
-mkdir -p "$INSTALL_DIR" && cd "$INSTALL_DIR"
+mkdir -p "$INSTALL_DIR"
+cd "$INSTALL_DIR"
 if [[ -d ".git" ]]; then
+    info "Updating existing installation..."
     git pull origin main
 else
+    info "Cloning repository..."
     git clone https://github.com/moha100h/foti.git .
 fi
 mkdir -p logs
 
+# ── Python venv ───────────────────────────────────────────────────────────────
 info "Creating Python virtual environment..."
 python3.11 -m venv venv
-source venv/bin/activate
-pip install --upgrade pip -q
-pip install -r requirements.txt -q
+"$INSTALL_DIR/venv/bin/pip" install --upgrade pip -q
+"$INSTALL_DIR/venv/bin/pip" install -r requirements.txt -q
 success "Python environment ready"
 
+# ── .env file ─────────────────────────────────────────────────────────────────
 info "Writing .env ..."
-cat > .env << ENVEOF
+cat > "$INSTALL_DIR/.env" << ENVEOF
 BOT_TOKEN=$BOT_TOKEN
 ADMIN_IDS=$ADMIN_ID
 DATABASE_URL=postgresql+asyncpg://foti:$DB_PASS@localhost:5432/foti_db
@@ -80,13 +101,17 @@ CACHE_TTL=3600
 LIVE_CACHE_TTL=60
 RATE_LIMIT=60
 RATE_LIMIT_WINDOW=60
+ALEMBIC_DATABASE_URL=postgresql+psycopg2://foti:$DB_PASS@localhost:5432/foti_db
 ENVEOF
 success ".env created"
 
+# ── Database migrations ───────────────────────────────────────────────────────
 info "Running database migrations..."
-python -m alembic upgrade head
+cd "$INSTALL_DIR"
+"$INSTALL_DIR/venv/bin/python" -m alembic upgrade head
 success "Migrations done"
 
+# ── systemd service ───────────────────────────────────────────────────────────
 info "Installing systemd service..."
 cat > /etc/systemd/system/foti.service << SVCEOF
 [Unit]
@@ -113,6 +138,7 @@ systemctl enable foti
 systemctl start foti
 success "Service foti started"
 
+# ── Done ──────────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${GREEN}╔══════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║              Installation Complete!                  ║${NC}"
