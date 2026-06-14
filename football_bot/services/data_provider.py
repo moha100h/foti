@@ -1,9 +1,16 @@
-"""Multi-source football data provider with fallback chain + in-memory TTL cache."""
+"""Multi-source football data provider with fallback chain + in-memory TTL cache.
+
+API token resolution order:
+  1. runtime DB setting "FOOTBALL_DATA_TOKEN" (set by admin inside the bot)
+  2. settings.FOOTBALL_DATA_TOKEN (.env)
+  3. none -> free tier
+"""
 import aiohttp, time
 from datetime import date, timedelta
 from typing import List, Dict, Any, Optional
 from loguru import logger
 from football_bot.config import settings
+from football_bot.services import settings_service
 
 _cache: Dict[str, tuple] = {}
 
@@ -28,7 +35,7 @@ async def _get_json(url, headers=None, params=None):
     return None
 
 def _fdh():
-    tok = getattr(settings, "FOOTBALL_DATA_TOKEN", "") or ""
+    tok = settings_service.cache_get("FOOTBALL_DATA_TOKEN") or getattr(settings, "FOOTBALL_DATA_TOKEN", "") or ""
     return {"X-Auth-Token": tok} if tok else {}
 
 async def live_matches():
